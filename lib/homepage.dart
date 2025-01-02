@@ -6,10 +6,7 @@ class HomeScreen extends StatelessWidget {
   HomeScreen({Key? key}) : super(key: key);
 
   final ValueNotifier<List<Map<String, String>>> productsNotifier =
-      ValueNotifier([
-    // {'name': 'Product 1', 'description': 'Description of Product 1'},
-    // {'name': 'Product 2', 'description': 'Description of Product 2'},
-  ]);
+      ValueNotifier([]);
 
   void addProduct(String name, String description) {
     productsNotifier.value = [
@@ -87,8 +84,17 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Removes the back arrow
         title: const Text('Manage Products'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
