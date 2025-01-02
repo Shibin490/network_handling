@@ -45,6 +45,7 @@ dependencies:
   http: ^1.2.2
   animate_do: ^3.3.4
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

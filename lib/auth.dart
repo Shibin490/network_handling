@@ -68,6 +68,9 @@ class AuthProvider with ChangeNotifier {
     if (otp == '4040') {
       _isOtpVerified = true;
       notifyListeners();
+    } else {
+      _isOtpVerified = false;
+      notifyListeners();
     }
   }
 

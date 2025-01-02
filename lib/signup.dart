@@ -1,7 +1,7 @@
-// ignore_for_file: prefer_const_constructors, unused_local_variable, use_key_in_widget_constructors, library_private_types_in_public_api, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
+import 'package:leveleight/signupapi.dart';
 import 'package:email_validator/email_validator.dart';
+import 'signmodel.dart';
 
 class SignupScreen extends StatelessWidget {
   final formKey = GlobalKey<FormState>();
@@ -21,41 +21,31 @@ class SignupScreen extends StatelessWidget {
         padding: EdgeInsets.all(16.0),
         child: Form(
           key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
-              TextFormField(
+              buildTextField(
                 controller: firstNameController,
-                decoration: InputDecoration(
-                  labelText: 'First Name',
-                  border: OutlineInputBorder(),
-                ),
+                labelText: 'First Name',
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your first name'
                     : value.length < 2
                         ? 'Name must be at least 2 characters'
                         : null,
               ),
-              SizedBox(height: 10),
-              TextFormField(
+              SizedBox(height: 16),
+              buildTextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
+                labelText: 'Email',
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your email'
                     : !EmailValidator.validate(value)
                         ? 'Please enter a valid email'
                         : null,
               ),
-              SizedBox(height: 10),
-              TextFormField(
+              SizedBox(height: 16),
+              buildTextField(
                 controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                ),
+                labelText: 'Password',
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty)
@@ -63,45 +53,91 @@ class SignupScreen extends StatelessWidget {
                   if (value.length < 8)
                     return 'Password must be at least 8 characters';
                   if (!value.contains(RegExp(r'[A-Z]')))
-                    return 'Must contain an uppercase letter';
+                    return 'Password must contain at least one uppercase letter';
                   if (!value.contains(RegExp(r'[0-9]')))
-                    return 'Must contain a number';
+                    return 'Password must contain at least one number';
                   return null;
                 },
               ),
-              SizedBox(height: 10),
-              TextFormField(
+              SizedBox(height: 16),
+              buildTextField(
                 controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                ),
+                labelText: 'Phone Number',
                 keyboardType: TextInputType.phone,
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your phone number'
-                    : !RegExp(r'^\+?[\d\s-]{10,}\$').hasMatch(value)
+                    : !RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)
                         ? 'Please enter a valid phone number'
                         : null,
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (formKey.currentState!.validate()) {
-                    // Handle signup logic here
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Sign Up Successful')),
-                    );
+                    try {
+                      String? responseMessage = await signupUser(User(
+                        fullname: firstNameController.text,
+                        email: emailController.text,
+                        password: passwordController.text,
+                        phone: phoneController.text,
+                      ));
+
+                      if (responseMessage == "Number already exists") {
+                        showSnackBar(
+                            context,
+                            "Phone number already exists. Please use a different number.",
+                            Colors.red);
+                      } else {
+                        showSnackBar(context, responseMessage!, Colors.green);
+                        Navigator.pushNamed(context, '/otp',
+                            arguments: emailController.text);
+                      }
+                    } catch (e) {
+                      showSnackBar(context, 'Signup failed: $e', Colors.red);
+                    }
+                  } else {
+                    showSnackBar(context,
+                        'Please correct the errors in the form.', Colors.red);
                   }
                 },
                 child: Text('Sign Up'),
               ),
+              SizedBox(height: 16),
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pushReplacementNamed(context, '/'),
                 child: Text('Back to Home'),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: OutlineInputBorder(),
+      ),
+      validator: validator,
+    );
+  }
+
+  void showSnackBar(BuildContext context, String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
       ),
     );
   }
