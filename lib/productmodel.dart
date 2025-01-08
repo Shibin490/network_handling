@@ -1,31 +1,22 @@
 class Product {
-  String id;
+  String? id; // Optional for new products
   String name;
   String description;
-  double price;
-  String imageUrl;
 
   Product({
-    required this.id,
+    this.id,
     required this.name,
     required this.description,
-    required this.price,
-    required this.imageUrl,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['id'],
+        id: json['_id'], // Note: crudcrud uses '_id'
         name: json['name'],
         description: json['description'],
-        price: json['price'].toDouble(),
-        imageUrl: json['imageUrl'],
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'name': name,
         'description': description,
-        'price': price,
-        'imageUrl': imageUrl,
       };
 }

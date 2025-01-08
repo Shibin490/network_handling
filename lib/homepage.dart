@@ -1,57 +1,49 @@
-// ignore_for_file: use_super_parameters
-
 import 'package:flutter/material.dart';
+import 'package:leveleight/productapi.dart';
+import 'package:leveleight/productmodel.dart';
 
 class HomeScreen extends StatelessWidget {
+  final ProductApiService _apiService = ProductApiService();
+  final ValueNotifier<Future<List<Product>>> _productsFutureNotifier =
+      ValueNotifier<Future<List<Product>>>(ProductApiService().fetchProducts());
+
   HomeScreen({Key? key}) : super(key: key);
 
-  final ValueNotifier<List<Map<String, String>>> productsNotifier =
-      ValueNotifier([]);
-
-  void addProduct(String name, String description) {
-    productsNotifier.value = [
-      ...productsNotifier.value,
-      {'name': name, 'description': description}
-    ];
+  void _refreshProducts() {
+    _productsFutureNotifier.value = _apiService.fetchProducts();
   }
 
-  void editProduct(int index, String name, String description) {
-    final updatedProducts =
-        List<Map<String, String>>.from(productsNotifier.value);
-    updatedProducts[index] = {'name': name, 'description': description};
-    productsNotifier.value = updatedProducts;
-  }
+  Future<void> _showProductDialog(BuildContext context,
+      {Product? product}) async {
+    final bool isEditing = product != null;
+    final nameController = TextEditingController(text: product?.name ?? '');
+    final descriptionController =
+        TextEditingController(text: product?.description ?? '');
 
-  void deleteProduct(int index) {
-    final updatedProducts =
-        List<Map<String, String>>.from(productsNotifier.value)..removeAt(index);
-    productsNotifier.value = updatedProducts;
-  }
-
-  void showProductDialog(BuildContext context, {int? index}) {
-    final nameController = TextEditingController(
-      text: index != null ? productsNotifier.value[index]['name'] : '',
-    );
-    final descriptionController = TextEditingController(
-      text: index != null ? productsNotifier.value[index]['description'] : '',
-    );
-
-    showDialog(
+    await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: Text(index == null ? 'Add Product' : 'Edit Product'),
+          title: Text(isEditing ? 'Edit Product' : 'Add Product'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Product Name'),
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'Enter product name',
+                ),
               ),
+              const SizedBox(height: 16),
               TextField(
                 controller: descriptionController,
-                decoration:
-                    const InputDecoration(labelText: 'Product Description'),
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Enter product description',
+                ),
+                maxLines: 3,
               ),
             ],
           ),
@@ -61,18 +53,50 @@ class HomeScreen extends StatelessWidget {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final name = nameController.text.trim();
                 final description = descriptionController.text.trim();
 
-                if (index == null) {
-                  addProduct(name, description);
-                } else {
-                  editProduct(index, name, description);
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a name')),
+                  );
+                  return;
                 }
-                Navigator.pop(context);
+
+                try {
+                  final newProduct = Product(
+                    id: isEditing ? product?.id : null,
+                    name: name,
+                    description: description,
+                  );
+
+                  if (isEditing) {
+                    await _apiService.editProduct(newProduct.id!, newProduct);
+                  } else {
+                    await _apiService.addProduct(newProduct);
+                  }
+
+                  Navigator.pop(context);
+                  _refreshProducts();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isEditing
+                          ? 'Product updated successfully'
+                          : 'Product added successfully'),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
-              child: Text(index == null ? 'Add' : 'Save'),
+              child: Text(isEditing ? 'Save' : 'Add'),
             ),
           ],
         );
@@ -84,70 +108,133 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Removes the back arrow
-        title: const Text('Manage Products'),
-        centerTitle: true,
+        title: const Text('Products'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => showProductDialog(context),
-            child: const Text('Add Product'),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ValueListenableBuilder<List<Map<String, String>>>(
-              valueListenable: productsNotifier,
-              builder: (context, products, child) {
-                return ListView.builder(
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final product = products[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Text(product['name']!),
-                        subtitle: Text(product['description']!),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () =>
-                                  showProductDialog(context, index: index),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () {
-                                deleteProduct(index);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        '${product['name']} deleted successfully'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showProductDialog(context),
+        child: const Icon(Icons.add),
+      ),
+      body: ValueListenableBuilder<Future<List<Product>>>(
+        valueListenable: _productsFutureNotifier,
+        builder: (context, productsFuture, _) {
+          return FutureBuilder<List<Product>>(
+            future: productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Error loading products'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _refreshProducts,
+                        child: const Text('Retry'),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 );
-              },
-            ),
-          ),
-        ],
+              }
+
+              final products = snapshot.data ?? [];
+
+              if (products.isEmpty) {
+                return const Center(
+                  child:
+                      Text('No products yet', style: TextStyle(fontSize: 16)),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: ListTile(
+                      title: Text(
+                        product.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(product.description),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () =>
+                                _showProductDialog(context, product: product),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Confirm Delete'),
+                                  content: const Text(
+                                      'Are you sure you want to delete this product?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                try {
+                                  await _apiService.deleteProduct(product.id!);
+                                  _refreshProducts();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Product deleted successfully')),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Error deleting product: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

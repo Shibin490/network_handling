@@ -1,116 +1,226 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'auth.dart';
 
 class OTPScreen extends StatelessWidget {
-  final List<TextEditingController> otpControllers = List.generate(
-    4,
-    (index) => TextEditingController(),
-  );
+  final ValueNotifier<bool> isLoadingNotifier = ValueNotifier<bool>(false);
+  final List<TextEditingController> controllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> focusNodes = List.generate(4, (_) => FocusNode());
 
-  String getOtp() {
-    return otpControllers.map((controller) => controller.text).join();
-  }
+  OTPScreen({Key? key}) : super(key: key);
 
-  void verifyOtp(BuildContext context, String email) {
-    final otp = getOtp();
+  String get otp => controllers.map((c) => c.text).join();
+
+  void verifyOtp(BuildContext context, String email) async {
     if (otp.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter complete OTP'),
-          backgroundColor: Colors.red.shade400,
-        ),
-      );
+      _showErrorSnackBar(context, 'Please enter complete OTP');
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.verifyOtp(otp);
+    isLoadingNotifier.value = true;
 
-    if (authProvider.isOtpVerified) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Invalid OTP. '),
-          backgroundColor: Colors.red.shade400,
-        ),
-      );
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.verifyOtp(otp, email);
+
+      if (authProvider.isOtpVerified) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      } else {
+        _showErrorSnackBar(context, 'Invalid OTP. Please try again.');
+      }
+    } catch (e) {
+      _showErrorSnackBar(context, 'Verification failed. Please try again.');
+    } finally {
+      isLoadingNotifier.value = false;
     }
   }
 
-  void resendOtp(BuildContext context, String email) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.resendOtp(email);
+  void resendOtp(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('A new OTP has been sent to $email')),
+      SnackBar(
+        content: Text('OTP resent successfully'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOTPField(BuildContext context, int index) {
+    return SizedBox(
+      width: 60,
+      height: 60,
+      child: TextFormField(
+        controller: controllers[index],
+        focusNode: focusNodes[index],
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.blue),
+          ),
+          counterText: '',
+        ),
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        inputFormatters: [
+          LengthLimitingTextInputFormatter(1),
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+        onChanged: (value) {
+          if (value.length == 1 && index < 3) {
+            focusNodes[index + 1].requestFocus();
+          } else if (value.isEmpty && index > 0) {
+            focusNodes[index - 1].requestFocus();
+          }
+        },
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final email = ModalRoute.of(context)!.settings.arguments as String;
+    final email = ModalRoute.of(context)?.settings.arguments as String?;
+
+    if (email == null || email.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Verification')),
+        body: const Center(child: Text('Invalid email address')),
+      );
+    }
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('OTP Verification'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
+        title: Text(
+          'Verification',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Enter the OTP sent to your email',
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8),
-            Text(
-              email,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(
-                4,
-                (index) => SizedBox(
-                  width: 50,
-                  child: TextField(
-                    controller: otpControllers[index],
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      counterText: '',
-                    ),
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 1,
-                    onChanged: (value) {
-                      if (value.length == 1 && index < 3) {
-                        FocusScope.of(context).nextFocus();
-                      }
-                    },
-                  ),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
+              Text(
+                'Enter Verification Code',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'We sent a code to\n$email',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(
+                  4,
+                  (index) => _buildOTPField(context, index),
                 ),
               ),
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => verifyOtp(context, email),
-              child: Text('Verify & Proceed'),
-            ),
-            SizedBox(height: 16),
-            TextButton(
-              onPressed: () => resendOtp(context, email),
-              child: Text(
-                'Resend OTP',
-                style: TextStyle(color: Colors.blue),
+              const SizedBox(height: 40),
+              ValueListenableBuilder<bool>(
+                valueListenable: isLoadingNotifier,
+                builder: (context, isLoading, _) {
+                  return SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed:
+                          isLoading ? null : () => verifyOtp(context, email),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Verify',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () => resendOtp(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey[700],
+                ),
+                child: Text(
+                  'Resend Code',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
