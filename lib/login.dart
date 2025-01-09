@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors, use_super_parameters, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:leveleight/loginapi.dart';
 import 'package:email_validator/email_validator.dart';
@@ -25,15 +27,12 @@ class LoginScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo
                   Icon(
                     Icons.shopping_cart,
                     size: 64,
                     color: Colors.blue,
                   ),
                   SizedBox(height: 24),
-
-                  // Welcome Text
                   Text(
                     'Welcome Back',
                     style: TextStyle(
@@ -53,8 +52,6 @@ class LoginScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 32),
-
-                  // Email Field
                   buildTextField(
                     controller: emailController,
                     label: 'Email',
@@ -62,8 +59,6 @@ class LoginScreen extends StatelessWidget {
                     validator: validateEmail,
                   ),
                   SizedBox(height: 16),
-
-                  // Password Field
                   buildTextField(
                     controller: passwordController,
                     label: 'Password',
@@ -71,8 +66,6 @@ class LoginScreen extends StatelessWidget {
                     validator: validatePassword,
                   ),
                   SizedBox(height: 32),
-
-                  // Login Button
                   SizedBox(
                     height: 52,
                     child: ElevatedButton(
@@ -95,8 +88,6 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 24),
-
-                  // Sign Up Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:leveleight/productapi.dart';
 import 'package:leveleight/productmodel.dart';
@@ -66,7 +68,7 @@ class HomeScreen extends StatelessWidget {
 
                 try {
                   final newProduct = Product(
-                    id: isEditing ? product?.id : null,
+                    id: isEditing ? product.id : null,
                     name: name,
                     description: description,
                   );

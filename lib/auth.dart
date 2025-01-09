@@ -70,6 +70,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+// token authorization ==========================
+
   Future<void> _verifyToken(String token) async {
     try {
       final response = await http.post(
@@ -108,20 +110,17 @@ class AuthProvider with ChangeNotifier {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-        // Check if the response contains the required tokens
         if (responseData.containsKey('token') &&
             responseData.containsKey('sessionId')) {
           final String token = responseData['token'];
           _sessionId = responseData['sessionId'];
 
-          // Store the token and session ID in SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('authToken', token);
           await prefs.setString('sessionId', _sessionId!);
 
           _user = email;
-          notifyListeners(); // Notify listeners to update the UI
+          notifyListeners();
           return true;
         }
       }
@@ -132,12 +131,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // This function demonstrates how to use the stored token in subsequent API calls.
   Future<http.Response> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs
-          .getString('authToken'); // Retrieve the token from SharedPreferences
+      final token = prefs.getString('authToken');
 
       if (token == null) {
         throw 'No token found';
@@ -147,8 +144,7 @@ class AuthProvider with ChangeNotifier {
         Uri.parse('https://sampleapi.stackmod.ino/api/v1/login'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization':
-              'Bearer $token', // Include the token in the Authorization header
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -161,7 +157,6 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> verifyOtp(String otp, String email) async {
     try {
-      // Verify user exists using VerificationService
       final bool userExists = await VerificationService.verifyUser(email);
       final String _verifyOtpUrl =
           'https://sampleapi.stackmod.info/api/v1/auth/otp';
@@ -173,7 +168,6 @@ class AuthProvider with ChangeNotifier {
         return;
       }
 
-      // Parse the OTP to an integer
       int otpNumber;
       try {
         otpNumber = int.parse(otp);
@@ -184,7 +178,6 @@ class AuthProvider with ChangeNotifier {
         return;
       }
 
-      // If user exists and OTP is valid, proceed with OTP verification
       final Map<String, String> requestBody = {
         'email': email,
         'otp': otpNumber.toString(),
@@ -206,7 +199,6 @@ class AuthProvider with ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-        // Check for success based on 'success' key or 'message' value
         if (responseData.containsKey('success') &&
             responseData['success'] == true) {
           _isOtpVerified = true;

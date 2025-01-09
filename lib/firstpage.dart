@@ -1,11 +1,33 @@
-// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors, library_private_types_in_public_api
 import 'package:flutter/material.dart';
 
-class FirstScreen extends StatelessWidget {
+class FirstScreen extends StatefulWidget {
+  @override
+  _FirstScreenState createState() => _FirstScreenState();
+}
+
+class _FirstScreenState extends State<FirstScreen>
+    with SingleTickerProviderStateMixin {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeInLogo();
+  }
+
+  void _fadeInLogo() {
+    Future.delayed(Duration(milliseconds: 500), () {
+      setState(() {
+        _opacity = 1.0;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Subtle background color
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
@@ -13,10 +35,9 @@ class FirstScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               buildLogo(),
-              SizedBox(height: 60), // Increased spacing
+              SizedBox(height: 60),
               buildAuthButtons(context),
-              SizedBox(height: 40), // Added bottom spacing
-              // buildFooterText(), // New footer element
+              SizedBox(height: 40),
             ],
           ),
         ),
@@ -25,40 +46,44 @@ class FirstScreen extends StatelessWidget {
   }
 
   Widget buildLogo() {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            shape: BoxShape.circle,
+    return AnimatedOpacity(
+      opacity: _opacity,
+      duration: Duration(seconds: 2),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_cart,
+              size: 80,
+              color: Colors.blue[700],
+            ),
           ),
-          child: Icon(
-            Icons.shopping_cart,
-            size: 80,
-            color: Colors.blue[700],
+          SizedBox(height: 24),
+          Text(
+            'SHOPPING CART',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: Colors.black87,
+            ),
           ),
-        ),
-        SizedBox(height: 24),
-        Text(
-          'SHOPPING CART',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-            color: Colors.black87,
+          SizedBox(height: 12),
+          Text(
+            'Your one-stop shop for everything',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              letterSpacing: 0.5,
+            ),
           ),
-        ),
-        SizedBox(height: 12),
-        // Text(
-        //   'Your one-stop shop for everything',
-        //   style: TextStyle(
-        //     fontSize: 16,
-        //     color: Colors.grey[600],
-        //     letterSpacing: 0.5,
-        //   ),
-        // ),
-      ],
+        ],
+      ),
     );
   }
 

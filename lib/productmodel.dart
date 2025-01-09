@@ -1,5 +1,5 @@
 class Product {
-  String? id; // Optional for new products
+  String? id;
   String name;
   String description;
 
@@ -10,7 +10,7 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['_id'], // Note: crudcrud uses '_id'
+        id: json['_id'],
         name: json['name'],
         description: json['description'],
       );

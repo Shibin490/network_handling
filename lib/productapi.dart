@@ -4,7 +4,7 @@ import 'package:leveleight/productmodel.dart';
 
 class ProductApiService {
   static const String baseUrl =
-      'https://crudcrud.com/api/0d1973e9c8df4b2f8c7d3c1bee34fdef/products';
+      'https://crudcrud.com/api/c05daf02698a4a83825eb35f0633428f/products';
 
   Future<List<Product>> fetchProducts() async {
     try {

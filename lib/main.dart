@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:leveleight/confirmation.dart';
 import 'package:provider/provider.dart';
@@ -6,15 +8,14 @@ import 'firstpage.dart';
 import 'signup.dart';
 import 'login.dart';
 import 'otpverification.dart';
-import 'homepage.dart'; // HomePage for authenticated users
+import 'homepage.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) =>
-              AuthProvider(), // Implement AuthProvider logic for auth flow
+          create: (_) => AuthProvider(),
         ),
       ],
       child: MyApp(),
@@ -31,68 +32,58 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Auth Flow',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: authProvider.isAuthenticated
-          ? '/home'
-          : '/', // Dynamically set based on auth status
+      initialRoute: authProvider.isAuthenticated ? '/home' : '/',
       routes: {
-        '/': (context) =>
-            FirstScreen(), // Initial screen (could be splash or intro)
-        '/signup': (context) => SignupScreen(), // Sign-up page
-        '/login': (context) => LoginScreen(), // Login page
-        '/otp': (context) => OTPScreen(), // OTP verification page
-        '/home': (context) => HomeScreen(), // Home page for authenticated users
-        '/verify': (context) => VerificationPage(), // Email verification page
+        '/': (context) => FirstScreen(),
+        '/signup': (context) => SignupScreen(),
+        '/login': (context) => LoginScreen(),
+        '/otp': (context) => OTPScreen(),
+        '/home': (context) => HomeScreen(),
+        '/verify': (context) => VerificationPage(),
       },
-      // Add onGenerateRoute to handle dynamic routes
       onGenerateRoute: (settings) {
         if (settings.name == '/register') {
-          final email =
-              settings.arguments as String; // Receive the email argument
+          final email = settings.arguments as String;
           return MaterialPageRoute(
-            builder: (context) => RegisterPage(email: email), // Pass the email
+            builder: (context) => RegisterPage(email: email),
           );
         }
-        // Add more routes with dynamic arguments if needed
-        return null; // Fallback to default behavior if route not found
+
+        return null;
       },
-      // Optional: Handle undefined routes
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
-          builder: (context) =>
-              UnknownPage(), // Display a 404 page or error page
+          builder: (context) => UnknownPage(),
         );
       },
     );
   }
 }
 
-// Example RegisterPage implementation to accept email
 class RegisterPage extends StatelessWidget {
   final String email;
 
-  RegisterPage({required this.email});
+  const RegisterPage({required this.email});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Register"),
+        title: const Text("Register"),
       ),
       body: Center(
-        child: Text(
-            "Registering with email: $email"), // Display email or handle registration
+        child: Text("Registering with email: $email"),
       ),
     );
   }
 }
 
-// Optional: Handle unknown routes
 class UnknownPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Page Not Found"),
+        title: const Text("Page Not Found"),
       ),
       body: Center(
         child: Text("404 - Page not found!"),
